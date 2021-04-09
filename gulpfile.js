@@ -1,5 +1,6 @@
 const { series, parallel, src, dest, watch } = require('gulp');
-const buildPath = "./build/";
+const buildPath = "./dist/";
+const buildEQXPath = "./for-EQX-upload/";
 
 // Start
 function start(cb, context=""){
@@ -32,6 +33,7 @@ const stylus = require('gulp-stylus');
 const autoprefixer = require('gulp-autoprefixer');
 const uglifycss = require('gulp-uglifycss');
 const inject = require('gulp-inject-string');
+
 const stylSrc = './styles/styles.styl';
 const stylDist = buildPath + 'styles.css';
 function buildCSS(cb){
@@ -42,6 +44,19 @@ function buildCSS(cb){
 		.pipe(inject.prepend('<style>'))
 		.pipe(inject.append('</style>'))
 		.pipe(rename('styles.css'))
+		.pipe(dest(buildPath));
+}
+
+const stylEQXSrc = buildPath + 'remove-for-eqx.css';
+const stylEQXDist = buildPath + 'styles.css';
+function buildEQXCSS(cb){
+	return src(stylEQXSrc)
+		.pipe(stylus())
+     	.pipe(autoprefixer())
+     	.pipe(uglifycss())
+		.pipe(inject.prepend('<style>'))
+		.pipe(inject.append('</style>'))
+		.pipe(rename('stylEQXDist.css'))
 		.pipe(dest(buildPath));
 }
 
@@ -65,9 +80,30 @@ const concat = require('gulp-concat');
 const flatmap = require('gulp-flatmap');
 const del = require('del');
 const rename = require("gulp-rename");
-const htmlSrc = './visuals/*';
+const htmlSrc = './src/*';
 const htmlmin = require('gulp-htmlmin');
 function build(cb) {
+	return src(htmlSrc)
+		.pipe(flatmap((stream, file) => {
+			return src([
+				'./partials/header.html', 
+				file.path, 
+				stylDist,
+				stylEQXDist,
+				jsDefaultsDist,
+				'./partials/footer.html'
+			])
+			.pipe(concat(file.path.replace(file.base, "")))
+			.pipe(htmlmin({ collapseWhitespace: true }))
+			.pipe(rename(function (path) {
+				path.extname = ".html";
+			}))
+			.pipe(dest(buildPath))
+			.pipe(server.stream());
+		}));
+}
+
+function buildForEQX(cb) {
 	return src(htmlSrc)
 		.pipe(flatmap((stream, file) => {
 			return src([
@@ -82,7 +118,7 @@ function build(cb) {
 			.pipe(rename(function (path) {
 				path.extname = ".html";
 			}))
-			.pipe(dest(buildPath))
+			.pipe(dest(buildEQXPath))
 			.pipe(server.stream());
 		}));
 }
@@ -99,9 +135,9 @@ function postClean(cb) {
 
 // Listen
 function listen(cb){
-  	watch(stylSrc, series(start, preClean, parallel(buildCSS, buildDefaults), postClean, build, complete, reload));
-  	watch(jsDefaultsSrc, series(start, preClean, parallel(buildCSS, buildDefaults), postClean, build, complete, reload));
-  	watch(htmlSrc, series(start, preClean, parallel(buildCSS, buildDefaults), postClean, build, complete, reload));
+  	watch(stylSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), postClean, build, buildForEQX, complete, reload));
+  	watch(jsDefaultsSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), postClean, build, buildForEQX, complete, reload));
+  	watch(htmlSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), postClean, build, buildForEQX, complete, reload));
 }
 
 
@@ -114,5 +150,5 @@ function complete(cb, context=""){
 }
 
  
-exports.build		= series( start, preClean, parallel(buildCSS, buildDefaults), build, postClean, complete);
-exports.default 	= series( start, preClean, parallel(buildCSS, buildDefaults), build, postClean, complete, serve, listen);
+exports.build		= series( start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), build, buildForEQX, postClean, complete);
+exports.default 	= series( start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), build, buildForEQX, postClean, complete, serve, listen);
