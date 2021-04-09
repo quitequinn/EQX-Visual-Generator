@@ -47,8 +47,8 @@ function buildCSS(cb){
 		.pipe(dest(buildPath));
 }
 
-const stylEQXSrc = buildPath + 'remove-for-eqx.css';
-const stylEQXDist = buildPath + 'styles.css';
+const stylEQXSrc = './styles/remove-for-eqx.styl';
+const stylEQXDist = buildPath + 'remove-for-eqx.css';
 function buildEQXCSS(cb){
 	return src(stylEQXSrc)
 		.pipe(stylus())
@@ -56,7 +56,7 @@ function buildEQXCSS(cb){
      	.pipe(uglifycss())
 		.pipe(inject.prepend('<style>'))
 		.pipe(inject.append('</style>'))
-		.pipe(rename('stylEQXDist.css'))
+		.pipe(rename('remove-for-eqx.css'))
 		.pipe(dest(buildPath));
 }
 
@@ -129,15 +129,15 @@ function preClean(cb) {
 	return del(buildPath + "**/*");
 }
 function postClean(cb) {
-	return del([stylDist, jsDefaultsDist]);
+	return del([stylDist, stylEQXDist, jsDefaultsDist]);
 }
 
 
 // Listen
 function listen(cb){
-  	watch(stylSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), postClean, build, buildForEQX, complete, reload));
-  	watch(jsDefaultsSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), postClean, build, buildForEQX, complete, reload));
-  	watch(htmlSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), postClean, build, buildForEQX, complete, reload));
+	watch('./styles/**.*', series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), build, buildForEQX, postClean, complete, reload));
+	watch(jsDefaultsSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), build, buildForEQX, postClean, complete, reload));
+	watch(htmlSrc, series(start, preClean, parallel(buildCSS, buildEQXCSS, buildDefaults), build, buildForEQX, postClean, complete, reload));
 }
 
 
