@@ -30,6 +30,6 @@
     "gulp-uglify": "^3.0.2",
     "gulp-watch": "^5.0.1",
     "gulp-uglifycss": "^1.1.0",
-    "browser-sync": "^2.26.12"
+    "browser-sync": "^2.27.10"
   }
 }
